@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Conway's Game of Life</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0d0d1a; /* Dark space-like background */
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            display: grid;
+            place-items: center;
+        }
+
+        canvas {
+            border: 1px solid #444;
+            background-color: #111; 
+            cursor:crosshair;
+        }
+
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-width: 300px;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .button {
+            padding: 10px 16px;
+            margin-right: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            width: 10vw;
+            border: none;
+            background: linear-gradient(135deg, #3a3a52, #23233d);
+            color: white;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .button:hover {
+            background: linear-gradient(135deg, #505073, #37375a);
+            transform: scale(1.1);
+        }
+
+        .stats {
+            margin-top: 14px;
+            font-size: 14px;
+            color: #bbbbff; 
+        }
+
+        h6 {
+            color: #8888ff;
+            text-shadow: 0 0 5px #6666ff;
+        }
+
+        .team {
+            padding: 10px 16px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-weight: bold;
+            font-size: 12px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .team:hover {
+            transform: scale(1.1);
+        }
+
+        #team1Btn {
+            color: #00aaff;
+        }
+
+        #team2Btn {
+            color: #ff3366;
+        }
+
+        #team1Btn.active {
+            background-color: #00aaff;
+            color: #ffffff;
+        }
+
+        #team2Btn.active {
+            background-color: #ff3366;
+            color: #ffffff;
+        }
+
+        #speedRange {
+            width: 100px;  
+            height: 5px; 
+            margin-left: 10px;
+        }
+
+
+        .progress-container {
+            margin-top: 10px;
+        }
+
+        .container {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px; /* Adjust spacing */
+        }
+
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00aaff;
+            text-shadow: 0 0 10px #00aaff, 0 0 20px #0088cc;
+            font-family: 'Arial', sans-serif;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls-container">
+            <div class="controls">
+                <h1 class="title">Conway's Game of Life</h1>
+                <button class="button" id="startBtn">Start</button>
+                <button class="button" id="clearBtn">Clear</button>
+                <button class="button" id="randomBtn">Random</button>
+                <button class="button" id="gliderGunBtn">Glider Gun</button>
+                <button class="button" id="pulsarBtn">Pulsar</button>
+                <button class="button" id="pentaDecathlonBtn">PentaDecathlon</button>
+                <button class="button" id="osaka">Osaka</button>
+                <div class="teamz">
+                    <button class="team" id="team1Btn">Team 1</button>
+                    <button class="team" id="team2Btn">Team 2</button>
+                </div>
+                <label for="speedRange" style="font-size: 12px;">Speed:</label>
+                <input type="range" id="speedRange" min="10" max="500" value="30">
+                <span id="speedDisplay" style="font-size: 12px;">30ms</span>
+            </div>
+        </div>
+        <canvas id="gridCanvas"></canvas>
+    </div>
+    <div class="stats" id="statsDisplay">Team 1: 0% | Team 2: 0%</div>
+    <div class="progress-container">
+        <canvas id="progressBarCanvas"></canvas>
+    </div>
+    <a href="https://github.com/Abdelmadjid207"><h6>Made by Abdelmadjid Taouinar</h6></a>
+    
+
+    <script>
+        class Game {
+            constructor(rows, cols, cellSize) {
+                this.rows = rows;
+                this.cols = cols;
+                this.cellSize = cellSize;
+                this.grid = this.createEmptyGrid();
+                this.isRunning = false;
+                this.currentTeam = 1;
+            }
+            
+            
+
+            createEmptyGrid() {
+                return Array.from({ length: this.rows }, () => Array(this.cols).fill(0));
+            }
+
+            randomize() {
+                this.grid = this.grid.map(row => row.map(() => (Math.random() > 0.5 ? (Math.random() > 0.5 ? 1 : 2) : 0)));
+            }
+
+            drawPattern(pattern, team) {
+                pattern.forEach(([x, y]) => {
+                    if (y < this.rows && x < this.cols) this.grid[y][x] = team;
+                });
+            }
+
+            toggleCell(x, y) {
+                this.grid[y][x] = this.grid[y][x] === this.currentTeam ? 0 : this.currentTeam;
+            }
+            drawGliderGun() {
+                this.drawPattern([[26, 1], [24, 2], [26, 2], [14, 3], [15, 3], [22, 3], [23, 3], [36, 3], [37, 3],
+                [13, 4], [17, 4], [22, 4], [23, 4], [36, 4], [37, 4], [2, 5], [3, 5], [12, 5], [18, 5], [22, 5],
+                [23, 5], [2, 6], [3, 6], [12, 6], [16, 6], [18, 6], [19, 6], [24, 6], [26, 6], [12, 7], [18, 7],
+                [26, 7], [13, 8], [17, 8], [14, 9], [15, 9]], this.currentTeam);
+            }
+
+            drawPulsar() {
+                this.drawPattern([[4, 2], [5, 2], [6, 2], [10, 2], [11, 2], [12, 2],
+                [2, 4], [7, 4], [9, 4], [14, 4], [2, 5], [7, 5], [9, 5], [14, 5],
+                [2, 6], [7, 6], [9, 6], [14, 6], [4, 7], [5, 7], [6, 7], [10, 7], [11, 7], [12, 7],
+                [4, 9], [5, 9], [6, 9], [10, 9], [11, 9], [12, 9], [2, 10], [7, 10], [9, 10], [14, 10],
+                [2, 11], [7, 11], [9, 11], [14, 11], [2, 12], [7, 12], [9, 12], [14, 12],
+                [4, 14], [5, 14], [6, 14], [10, 14], [11, 14], [12, 14]], this.currentTeam);
+            }
+
+            drawPentaDecathlon() {
+                this.drawPattern([[6, 4], [7, 4], [5, 5], [8, 5], [5, 6], [8, 6], [5, 7], [8, 7], [6, 8], [7, 8]], this.currentTeam);
+            }
+
+            drawOsaka() {
+                const shapeMatrix = [
+                    "1111111000000000000000000000000001111111",
+                    "1111110000000000000000000000000000111111",
+                    "1111100000000000000110000000000000011111",
+                    "1111000000000000001110000000000000001111",
+                    "1111000000000000011111000100000000001111",
+                    "1110000000000100011111000100000000000111",
+                    "1110000000001100111111100110000000000111",
+                    "1110000000001101111111100110001000000111",
+                    "1110000000001001111111100111001000000111",
+                    "1100000000011011111111110111001000000011",
+                    "1100000010010000111111100000001100000011",
+                    "1100000010101111111111111111100100000011",
+                    "1100000010010001111111111000100100000011",
+                    "1100000110110000111111110000010100000011",
+                    "1100000110100010111111110001010100000011",
+                    "1100000110100000111111110000010110000011",
+                    "1100000110100000111111110000010110000011",
+                    "1100000110100000111111110000010110000011",
+                    "1100000110100000111111110000010100000011",
+                    "1100000110100000111111110000010100000011",
+                    "1100000111110001111111111000111100000001",
+                    "1100000111111111111111111111111100000001",
+                    "1100000111111111111111111111111100000001",
+                    "1100000011111111111111111111111100000001",
+                    "1100000011111111111111111111111100000001",
+                    "1100000011111111110000011111111100000001",
+                    "1100000001111111110000011111111000000001",
+                    "1100000000111111111000111111110000000001",
+                    "1100000000011111111111111111100000000001",
+                    "1100000000001111111111111110000000000001",
+                    "1100000000000011111111111100000000000001",
+                    "1100000000000000000000000000000000000001",
+                    "1100000000000001111111111000000000000001",
+                    "1100000000000001111111111100000000000001",
+                    "1100000000001111111111111111000000000001",
+                    "1100000000011111111111111111110000000001",
+                    "1100000001111111111111111111111100000001"
+                ];
+
+                // Convert the matrix into coordinates
+                const shapePattern = [];
+                for (let y = 0; y < shapeMatrix.length; y++) {
+                    for (let x = 0; x < shapeMatrix[y].length; x++) {
+                        if (shapeMatrix[y][x] === '1') {
+                            shapePattern.push([x, y]); // Store (x, y) coordinates of '1'
+                        }
+                    }
+                }
+
+                // Draw the pattern on the grid
+                this.drawPattern(shapePattern, this.currentTeam);
+            }
+
+
+
+
+
+            countNeighbors(x, y, team) {
+                let count = 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = (x + dx + this.cols) % this.cols;
+                        const ny = (y + dy + this.rows) % this.rows;
+                        if (this.grid[ny][nx] === team) count++;
+                    }
+                }
+                return count;
+            }
+
+            countTeams() {
+                let team1Count = 0;
+                let team2Count = 0;
+                let totalCells = this.rows * this.cols;
+                
+                for (let y = 0; y < this.rows; y++) {
+                    for (let x = 0; x < this.cols; x++) {
+                        if (this.grid[y][x] === 1) team1Count++;
+                        if (this.grid[y][x] === 2) team2Count++;
+                    }
+                }
+
+                return {
+                    team1Count,
+                    team2Count,
+                    team1Percentage: ((team1Count / (team1Count + team2Count)) * 100).toFixed(2), //divide by totalCells in case wanting percentage of canvas
+                    team2Percentage: ((team2Count / (team1Count + team2Count)) * 100).toFixed(2),
+                    team1totalPercentage: ((team1Count / totalCells) * 100).toFixed(2),
+                    team2totalPercentage: ((team2Count / totalCells) * 100).toFixed(2)
+                };
+            }
+
+
+            update() {
+                const newGrid = this.createEmptyGrid();
+                for (let y = 0; y < this.rows; y++) {
+                    for (let x = 0; x < this.cols; x++) {
+                        const team = this.grid[y][x];
+                        const neighbors1 = this.countNeighbors(x, y, 1);
+                        const neighbors2 = this.countNeighbors(x, y, 2);
+
+                        if (team === 1) {
+                            newGrid[y][x] = (neighbors1 === 2 || neighbors1 === 3) ? 1 : 0;
+                        } else if (team === 2) {
+                            newGrid[y][x] = (neighbors2 === 2 || neighbors2 === 3) ? 2 : 0;
+                        } else {
+                            if (neighbors1 === 3) newGrid[y][x] = 1;
+                            else if (neighbors2 === 3) newGrid[y][x] = 2;
+                        }
+                    }
+                }
+                this.grid = newGrid;
+            }
+        }
+
+        class Renderer {
+            constructor(canvas, game) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.game = game;
+                canvas.width = game.cols * game.cellSize;
+                canvas.height = game.rows * game.cellSize;
+                this.progressCanvas = document.getElementById("progressBarCanvas");
+                this.progressCtx = this.progressCanvas.getContext("2d");
+                this.progressCanvas.width = this.canvas.width;
+                this.progressCanvas.height = 20;
+
+
+                let isDrawing = false; // Track if the user is holding the mouse button
+
+                // Start drawing on mousedown
+                this.canvas.addEventListener('mousedown', (event) => {
+                    isDrawing = true;
+                    this.paintCell(event);
+                });
+
+                // Keep drawing when moving the mouse
+                this.canvas.addEventListener('mousemove', (event) => {
+                    if (isDrawing) {
+                        this.paintCell(event);
+                    }
+                });
+
+                // Stop drawing on mouseup or mouse leave
+                this.canvas.addEventListener('mouseup', () => {
+                    isDrawing = false;
+                });
+
+                this.canvas.addEventListener('mouseleave', () => {
+                    isDrawing = false;
+                });
+            }
+
+            // Helper function to paint a cell
+            paintCell(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = Math.floor((event.clientX - rect.left) / this.game.cellSize);
+                const y = Math.floor((event.clientY - rect.top) / this.game.cellSize);
+                this.game.toggleCell(x, y);
+                this.draw();
+                this.updateStats();
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                for (let y = 0; y < this.game.rows; y++) {
+                    for (let x = 0; x < this.game.cols; x++) {
+                        if (this.game.grid[y][x] === 1) {
+                            this.ctx.shadowBlur = 10;
+                            this.ctx.shadowColor = '#00aaff';
+                            this.ctx.fillStyle = '#00aaff';
+                        } else if (this.game.grid[y][x] === 2) {
+                            this.ctx.shadowBlur = 10;
+                            this.ctx.shadowColor = '#ff3366';
+                            this.ctx.fillStyle = '#ff3366';
+                        } else {
+                            continue;
+                        }
+                        this.ctx.fillRect(x * this.game.cellSize, y * this.game.cellSize, this.game.cellSize - 1, this.game.cellSize - 1);
+                    }
+                }
+                this.updateStats();
+                this.drawProgressBar();
+            }
+
+            updateStats() {
+                const { team1Count, team2Count, team1totalPercentage, team2totalPercentage } = this.game.countTeams();
+                document.getElementById('statsDisplay').textContent = 
+                    `Team 1: ${team1Count} blocks (${team1totalPercentage}%) | Team 2: ${team2Count} blocks (${team2totalPercentage}%)`;
+            }
+
+            drawProgressBar() {
+                const { team1Percentage, team2Percentage } = this.game.countTeams();
+                const barWidth = this.progressCanvas.width;
+                const barHeight = this.progressCanvas.height;
+
+                // Clear the progress bar canvas
+                this.progressCtx.clearRect(0, 0, barWidth, barHeight);
+                this.progressCtx.shadowBlur = 15;
+
+                // Draw Team 1 (blue) portion
+                this.progressCtx.fillStyle = "#00aaff";
+                this.progressCtx.fillRect(0, 0, (team1Percentage / 100) * barWidth, barHeight);
+
+                // Draw Team 2 (red) portion
+                this.progressCtx.fillStyle = "#ff3366";
+                this.progressCtx.fillRect((team1Percentage / 100) * barWidth, 0, (team2Percentage / 100) * barWidth, barHeight);
+
+                // Draw border around the progress bar
+                this.progressCtx.shadowBlur = 5;
+                this.progressCtx.shadowColor = "white";
+                this.progressCtx.strokeStyle = "white";
+                this.progressCtx.lineWidth = 2;
+                this.progressCtx.strokeRect(0, 0, barWidth, barHeight);
+            }
+
+
+        }
+
+        let intervalId = null;
+        let speed = 30;
+
+
+        document.getElementById('speedRange').addEventListener('input', (event) => {
+            speed = event.target.value;
+            document.getElementById('speedDisplay').textContent = `${speed}ms`;
+
+            if (game.isRunning) {
+                if (intervalId) clearInterval(intervalId);
+                intervalId = setInterval(() => {
+                    game.update();
+                    renderer.draw();
+                }, speed);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const game = new Game(50, 100, 10);
+            const canvas = document.getElementById('gridCanvas');
+            const renderer = new Renderer(canvas, game);
+            let intervalId = null;
+
+            function updateTeamButtons() {
+                document.getElementById('team1Btn').classList.toggle('active', game.currentTeam === 1);
+                document.getElementById('team2Btn').classList.toggle('active', game.currentTeam === 2);
+            }
+
+            document.getElementById('team1Btn').addEventListener('click', () => {
+                game.currentTeam = 1;
+                updateTeamButtons();
+            });
+
+            document.getElementById('team2Btn').addEventListener('click', () => {
+                game.currentTeam = 2;
+                updateTeamButtons();
+            });
+
+            // Initialize button states on load
+            updateTeamButtons();
+
+            document.getElementById('startBtn').addEventListener('click', () => {
+                game.isRunning = !game.isRunning;
+                document.getElementById('startBtn').textContent = game.isRunning ? 'Stop' : 'Start';
+                if (game.isRunning) {
+                    intervalId = setInterval(() => {
+                        game.update();
+                        renderer.draw();
+                    }, speed);
+                } else {
+                    clearInterval(intervalId);
+                }
+            });
+
+            
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                game.grid = game.createEmptyGrid();
+                renderer.draw();
+            });
+
+            document.getElementById('team1Btn').addEventListener('click', () => {
+                game.currentTeam = 1;
+            });
+
+            document.getElementById('team2Btn').addEventListener('click', () => {
+                game.currentTeam = 2;
+            });
+
+
+            document.getElementById('randomBtn').addEventListener('click', () => {
+                game.randomize();
+                renderer.draw();
+            });
+
+            document.getElementById('gliderGunBtn').addEventListener('click', () => {
+                game.drawGliderGun();
+                renderer.draw();
+            });
+
+            document.getElementById('pulsarBtn').addEventListener('click', () => {
+                game.drawPulsar();
+                renderer.draw();
+            });
+
+            document.getElementById('pentaDecathlonBtn').addEventListener('click', () => {
+                game.drawPentaDecathlon();
+                renderer.draw();
+            });
+
+            document.getElementById('osaka').addEventListener('click', () => {
+                game.drawOsaka();
+                renderer.draw();
+            });            
+
+
+            renderer.draw();
+        });
+    </script>
+</body>
+</html>
